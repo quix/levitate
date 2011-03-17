@@ -105,10 +105,6 @@ class Levitate
     } + ["--text-report"]
   end
 
-  attribute :readme_file do
-    "README.rdoc"
-  end
-    
   attribute :generated_files do
     []
   end
@@ -611,8 +607,16 @@ class Levitate
       end
     end
 
+    def ruby_command
+      [ruby_bin] + Levitate.ruby_opts.to_a
+    end
+
+    def ruby_command_string
+      ruby_command.join(" ")
+    end
+
     def run(*args)
-      cmd = [ruby_bin, *args]
+      cmd = ruby_command + args
       unless system(*cmd)
         cmd_str = cmd.map { |t| "'#{t}'" }.join(", ")
         raise "system(#{cmd_str}) failed with status #{$?.exitstatus}"
@@ -626,7 +630,7 @@ class Levitate
     end
 
     def run_code_and_capture(code)
-      IO.popen(%{"#{ruby_bin}"}, "r+") { |pipe|
+      IO.popen(ruby_command_string, "r+") { |pipe|
         pipe.print(code)
         pipe.flush
         pipe.close_write
@@ -638,7 +642,7 @@ class Levitate
       unless File.file? file
         raise "file does not exist: `#{file}'"
       end
-      IO.popen(%{"#{ruby_bin}" "#{file}"}, "r") { |pipe|
+      IO.popen(ruby_command_string + " " + file, "r") { |pipe|
         pipe.read
       }
     end
@@ -792,6 +796,11 @@ class Levitate
       end
       Object.const_set("Test#{file}".gsub(".", ""), klass)
     end
+
+    def ruby_opts
+      @ruby_opts ||= []
+    end
+    attr_writer :ruby_opts
   end
 
   #### raw install, bypass gems
@@ -836,3 +845,8 @@ class Levitate
     end
   end
 end
+
+lambda do
+  config = File.join(File.dirname(__FILE__), "levitate_config.rb")
+  require config if File.file? config
+end.call
