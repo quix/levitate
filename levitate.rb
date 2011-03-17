@@ -178,7 +178,6 @@ class Levitate
         extra_rdoc_files
         require_paths
         required_ruby_version
-        extensions
       ].each do |param|
         t = send(param) and g.send("#{param}=", t)
       end
@@ -267,17 +266,6 @@ class Levitate
 
   attribute :developers do
     []
-  end
-
-  attribute :extensions do
-    ["ext/#{gem_name}/extconf.rb"].select { |f| File.file? f }
-  end
-  
-  attribute :so_file do
-    unless extensions.empty?
-      require 'rbconfig'
-      "lib/" + gem_name + "." + RbConfig::CONFIG["DLEXT"]
-    end
   end
 
   attribute :remote_levitate do
@@ -479,22 +467,6 @@ class Levitate
     task :uninstall do
       Installer.new.uninstall
     end
-
-    if so_file
-      dest = File.join(RbConfig::CONFIG["sitearchdir"], File.basename(so_file))
-
-      task :install => so_file do
-        puts "install #{so_file} --> #{dest}"
-        FileUtils.install(so_file, dest)
-      end
-
-      task :uninstall do
-        if File.file?(dest)
-          puts "rm #{dest}"
-          FileUtils.rm(dest)
-        end
-      end
-    end
   end
   
   def define_check_directory
@@ -590,34 +562,6 @@ class Levitate
     end
   end
 
-  def define_extension
-    if so_file and (source_control? or !File.file?(so_file))
-      require 'rbconfig'
-      require 'rake/extensiontask'
-      
-      Rake::ExtensionTask.new gem_name, gemspec do |ext|
-        ext.cross_compile = true
-        ext.cross_platform = 'i386-mswin32'
-        ext.cross_compiling do |gemspec|
-          gemspec.post_install_message =
-            "U got dat binary versionation of this gemination!"
-        end
-      end
-
-      if Rake::Task[so_file].needed?
-        task :test => so_file
-      end
-
-      task :cross_native_gem do
-        Rake::Task[:gem].reenable
-        Rake.application.top_level_tasks.replace %w[cross native gem]
-        Rake.application.top_level
-      end
-
-      task :gem => :cross_native_gem
-    end
-  end
-  
   #### helpers
 
   def files_in_require_paths
