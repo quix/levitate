@@ -109,10 +109,6 @@ class Levitate
     "README.rdoc"
   end
     
-  attribute :manifest_file do
-    "MANIFEST"
-  end
-
   attribute :generated_files do
     []
   end
@@ -122,11 +118,9 @@ class Levitate
   end
 
   attribute :files do
-    if File.file? manifest_file
-      File.read(manifest_file).split("\n")
-    elsif source_control?
+    if source_control?
       IO.popen("git ls-files") { |pipe| pipe.read.split "\n" }
-    end.to_a + [manifest_file] + generated_files
+    end.to_a + generated_files
   end
 
   attribute :rdoc_files do
@@ -291,10 +285,6 @@ class Levitate
     if source_control?
       require 'rubygems/package_task'
 
-      task manifest_file do
-        create_manifest
-      end
-      CLEAN.add manifest_file
       task :package => :clean
       Gem::PackageTask.new(gemspec).define
     end
@@ -550,7 +540,7 @@ class Levitate
     task :finish_release do
       git "tag", "#{gem_name}-" + version.to_s
       git "push", "--tags", "origin", "master"
-      sh "gem", "push", gem
+      sh "gem", "push", "pkg/#{gem_name}-#{version}.#{ext}"
     end
 
     task :release => [:prerelease, :package, :publish, :finish_release]
@@ -576,12 +566,6 @@ class Levitate
 
   def git(*args)
     sh "git", *args
-  end
-
-  def create_manifest
-    write_file(manifest_file) {
-      files.sort.join("\n")
-    }
   end
 
   def open_browser(*files)
