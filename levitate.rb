@@ -536,7 +536,7 @@ class Levitate
     task :finish_release do
       git "tag", "#{gem_name}-" + version.to_s
       git "push", "--tags", "origin", "master"
-      sh "gem", "push", "pkg/#{gem_name}-#{version}.#{ext}"
+      sh "gem", "push", "pkg/#{gem_name}-#{version}.gem"
     end
 
     task :release => [:prerelease, :package, :finish_release, :publish]
