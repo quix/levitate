@@ -725,19 +725,32 @@ class Levitate
     end
   end
 
-  def define_update_levitate
+  attribute :remote_levitate do
     url = ENV["LEVITATE"] ||
       "https://github.com/quix/levitate/raw/master/levitate.rb"
+    IO.popen("curl -s #{url}") { |f| f.read }
+  end
+
+  attribute :local_levitate do
+    File.open(__FILE__, "rb") { |f| f.read }
+  end
+
+  def define_check_levitate
+    task :check_levitate do
+      unless local_levitate == remote_levitate
+        raise "levitate is out of date"
+      end
+    end
+  end
+
+  def define_update_levitate
     task :update_levitate do
-      if system "curl", "-s", "-o", __FILE__, url
-        if `git diff #{__FILE__}` == ""
-          puts "Already up-to-date."
-        else
-          git "commit", __FILE__, "-m", "updated levitate"
-          puts "Updated levitate."
-        end
+      if local_levitate == remote_levitate
+        puts "Already up-to-date."
       else
-        raise "levitate download failed"
+        File.open(__FILE__, "w") { |f| f.print(remote_levitate) }
+        git "commit", __FILE__, "-m", "update levitate"
+        puts "Updated levitate."
       end
     end
   end
@@ -777,7 +790,13 @@ class Levitate
   end
 
   def define_release
-    task :prerelease => [:clean, :check_directory, :ping, history_file]
+    task :prerelease => [
+      :clean,
+      :check_directory,
+      :check_levitate,
+      :ping,
+      history_file
+    ]
 
     task :finish_release do
       git "tag", "#{gem_name}-" + version.to_s
