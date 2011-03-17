@@ -802,45 +802,35 @@ class Levitate
       require 'rbconfig'
       require 'find'
 
-      rb_root = RbConfig::CONFIG["sitelibdir"]
+      @fu = FileUtils::Verbose
       @spec = []
+
+      rb_root = RbConfig::CONFIG["sitelibdir"]
 
       Find.find "lib" do |source|
         next if source == "lib"
         next unless File.directory?(source) || File.extname(source) == ".rb"
         dest = File.join(rb_root, source.sub(%r!\Alib/!, ""))
-        @spec << { :source => source, :dest => dest }
+        @spec << [source, dest]
       end
     end
-  
+
     def install
-      @spec.each do |entry|
-        source, dest = entry.values_at(:source, :dest)
+      @spec.each do |source, dest|
         if File.directory?(source)
-          unless File.directory?(dest)
-            puts "mkdir #{dest}"
-            FileUtils.mkdir(dest)
-          end
+          @fu.mkdir(dest) unless File.directory?(dest)
         else
-          puts "install #{source} --> #{dest}"
-          FileUtils.install(source, dest)
+          @fu.install(source, dest)
         end
       end
     end
   
     def uninstall
-      @spec.reverse.each do |entry|
-        source, dest = entry.values_at(:source, :dest)
+      @spec.reverse.each do |source, dest|
         if File.directory?(source)
-          if File.directory?(dest)
-            puts "rmdir #{dest}"
-            FileUtils.rmdir(dest)
-          end
+          @fu.rmdir(dest) if File.directory?(dest)
         else
-          if File.file?(dest)
-            puts "rm #{dest}"
-            FileUtils.rm(dest)
-          end
+          @fu.rm(dest) if File.file?(dest)
         end
       end
     end
