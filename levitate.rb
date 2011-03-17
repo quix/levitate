@@ -539,7 +539,7 @@ class Levitate
       sh "gem", "push", "pkg/#{gem_name}-#{version}.#{ext}"
     end
 
-    task :release => [:prerelease, :package, :publish, :finish_release]
+    task :release => [:prerelease, :package, :finish_release, :publish]
   end
 
   def define_debug_gem
