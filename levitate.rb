@@ -7,7 +7,7 @@ class Levitate
 
     yield self
 
-    self.class.instance_methods(false).each do |name|
+    self.class.instance_methods(false).sort.each do |name|
       if name.to_s =~ %r!\Adefine_!
         send(name)
       end
