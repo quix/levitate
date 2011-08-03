@@ -261,7 +261,7 @@ class Levitate
 
   attribute :remote_levitate do
     url = ENV["LEVITATE"] ||
-      "https://github.com/quix/levitate/raw/master/levitate.rb"
+      "https://raw.github.com/quix/levitate/master/levitate.rb"
     IO.popen("curl -s #{url}") { |f| f.read }
   end
 
@@ -499,7 +499,7 @@ class Levitate
         puts "Already up-to-date."
       else
         File.open(__FILE__, "w") { |f| f.print(remote_levitate) }
-        git "commit", __FILE__, "-m", "update levitate"
+        git "commit", __FILE__, "-m", "update tools"
         puts "Updated levitate."
       end
     end
